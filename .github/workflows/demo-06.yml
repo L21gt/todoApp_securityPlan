@@ -1,0 +1,47 @@
+# Demo 06 - Coverage Alto (80%)
+
+name: Demo 06 - Coverage 80% (Profesional)
+
+on:
+  push:
+    branches: [ main, feature/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage-profesional:
+    name: "Coverage Profesional (80%)"
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Setup básico
+    - name: Obtener código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Instalar dependencias
+      run: npm ci
+    
+
+    # 2. Ejecutar tests con coverage
+    - name: Ejecutar tests con coverage
+      run: |
+        npm run test:coverage
+    
+    # 3. Lección final (siempre se ejecuta)
+    - name: "Lección: ¿Qué aprendemos del Coverage Alto?"
+      if: always()
+      run: |
+        echo ""
+        echo "EXPLICACIÓN DEL REPORTE:"
+        echo "  Columns → | % Stmts | % Branch | % Funcs | % Lines |"
+        echo "  Stmts:    Declaraciones ejecutadas"
+        echo "  Branch:   Ramas de código (if/else) probadas"  
+        echo "  Funcs:    Funciones llamadas en tests"
+        echo "  Lines:    Líneas de código ejecutadas"
+        
