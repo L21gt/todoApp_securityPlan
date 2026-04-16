@@ -1,19 +1,9 @@
-const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
+const tokenService = require("./tokenService"); // Importamos nuestro nuevo motor
 
 // ==========================================
 // CAPA LÓGICA: Authentication Gateway Service
 // ==========================================
-
-// Generamos el JWT con la información básica (payload) y nuestra llave secreta
-function generateToken(user) {
-  return jwt.sign(
-    { userId: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET,
-    // Expiración corta (15 min) para reducir la ventana de ataque si roban el token
-    { expiresIn: process.env.JWT_EXPIRES_IN || "15m" },
-  );
-}
 
 // Lógica de registro de nuevos usuarios
 async function register(email, password) {
@@ -21,23 +11,25 @@ async function register(email, password) {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     const error = new Error("Email already registered");
-    error.statusCode = 409; // 409 Conflict
+    error.statusCode = 409;
     throw error;
   }
 
-  // 2. Creamos el usuario en la BD.
-  // Nota para el equipo: El modelo User ejecutará el pre-save hook para hashear el password automáticamente.
+  // 2. Creamos el usuario
   const user = await User.create({ email, password });
-  return { user };
+
+  // 3. Auto-login: Generamos ambos tokens al registrarse
+  const accessToken = tokenService.generateAccessToken(user);
+  const refreshToken = tokenService.generateRefreshToken(user);
+
+  return { accessToken, refreshToken, user };
 }
 
 // Lógica de inicio de sesión
 async function login(email, password) {
   const user = await User.findOne({ email });
 
-  // Principio de seguridad: No Information Disclosure
-  // Devolvemos exactamente el mismo error 401 si falla el correo o la contraseña.
-  // Así evitamos que un atacante haga enumeración de usuarios válidos.
+  // Principio "Fail Secure" / "No Information Disclosure"
   if (!user) {
     const e = new Error("Invalid credentials");
     e.statusCode = 401;
@@ -51,9 +43,11 @@ async function login(email, password) {
     throw e;
   }
 
-  // Si pasa las validaciones, generamos su "pase de entrada"
-  const token = generateToken(user);
-  return { token, user };
+  // Generamos el par de tokens (Access corto, Refresh largo)
+  const accessToken = tokenService.generateAccessToken(user);
+  const refreshToken = tokenService.generateRefreshToken(user);
+
+  return { accessToken, refreshToken, user };
 }
 
-module.exports = { generateToken, register, login };
+module.exports = { register, login };
