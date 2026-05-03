@@ -8,6 +8,7 @@ const authRouter = require("./routes/auth");
 const authenticateToken = require("./middleware/auth");
 
 const app = express();
+const errorHandler = require("./middleware/errorHandler");
 
 // === CAPA 1: Headers de seguridad (Clase 4) ===
 // Utilizamos Helmet para agregar 11+ headers de seguridad automáticamente.
@@ -42,5 +43,9 @@ app.use("/api/tareas", authenticateToken, tareasRouter);
 app.get("/", (req, res) =>
   res.json({ ok: true, message: "Servidor seguro inicializado" }),
 );
+
+// === CAPA 4: Manejador Centralizado de Errores (Clase 5) ===
+// Este middleware captura cualquier error que ocurra en las rutas anteriores y responde de forma segura.
+app.use(errorHandler);
 
 module.exports = app;

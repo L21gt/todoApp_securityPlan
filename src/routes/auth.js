@@ -2,13 +2,15 @@ const express = require("express");
 const router = express.Router();
 const authGateway = require("../services/authGateway");
 const tokenService = require("../services/tokenService"); // Importamos el servicio de tokens para refresh/logout
+const validate = require("../middleware/validate");
+const { authSchema } = require("../validators/auth.validator");
 
 // ==========================================
 // CAPA HTTP: Rutas Públicas de Autenticación
 // ==========================================
 
 // POST /api/auth/register - Registro de nuevos usuarios con auto-login
-router.post("/register", async (req, res) => {
+router.post("/register", validate(authSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -25,12 +27,12 @@ router.post("/register", async (req, res) => {
       user,
     });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /api/auth/login - Inicio de sesión
-router.post("/login", async (req, res) => {
+router.post("/login", validate(authSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -47,13 +49,13 @@ router.post("/login", async (req, res) => {
       user,
     });
   } catch (err) {
-    res.status(err.statusCode || 401).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /api/auth/refresh - Rotación de tokens
 // Recibe un refreshToken válido y devuelve un nuevo par de tokens
-router.post("/refresh", (req, res) => {
+router.post("/refresh", (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
@@ -67,14 +69,13 @@ router.post("/refresh", (req, res) => {
     // Devolvemos el nuevo accessToken y el nuevo refreshToken
     res.json(tokens);
   } catch (err) {
-    // Si el token es inválido o viejo, devolvemos 401
-    res.status(err.statusCode || 401).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /api/auth/logout - Revocación de sesión
 // Recibe el refreshToken y lo elimina del store para invalidarlo
-router.post("/logout", (req, res) => {
+router.post("/logout", (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
@@ -87,7 +88,7 @@ router.post("/logout", (req, res) => {
 
     res.json({ message: "Logged out successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Internal server error" });
+    next(err);
   }
 });
 
