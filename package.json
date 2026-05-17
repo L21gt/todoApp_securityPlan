@@ -41,8 +41,7 @@
     "helmet": "^8.1.0",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.18.2",
-    "uuid": "^13.0.0"
+    "mongoose": "^8.18.2"
   },
   "devDependencies": {
     "@testcontainers/mongodb": "^10.13.2",

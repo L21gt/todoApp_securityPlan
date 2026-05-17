@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 // ==========================================
 // CAPA DE SERVICIO: Token Service
@@ -21,7 +21,7 @@ function generateAccessToken(user) {
 // Genera un token de refresco de vida larga (7 días) y lo guarda [cite: 10, 14]
 function generateRefreshToken(user) {
   // Usamos uuid para identificar la "familia" del token [cite: 96]
-  const familyId = uuidv4();
+  const familyId = crypto.randomUUID();
 
   const refreshToken = jwt.sign(
     { userId: user._id || user.id, familyId },
