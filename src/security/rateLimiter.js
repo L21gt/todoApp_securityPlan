@@ -1,7 +1,20 @@
 const rateLimit = require("express-rate-limit");
+const auditLogService = require("../services/auditLog.service"); // Importamos el motor de auditoría
 
-// Restricciones de límite de peticiones derivadas de los criterios de aceptación
-// Un máximo de 5 intentos permite que el 6to dispare la respuesta HTTP 429 Too Many Requests
+// Manejador centralizado para interceptar los bloqueos 429 y registrarlos en la BD
+const rateLimitHandler = (req, res, next, options) => {
+  // Auditoría: Registro de abuso de peticiones (Rate Limiting)
+  auditLogService.log("security.rate_limited", req, null, {
+    path: req.originalUrl,
+    limit: options.max,
+    window: options.windowMs,
+  });
+
+  // Mantenemos el comportamiento original: devolver el status 429 y el mensaje de error
+  res.status(options.statusCode).send(options.message);
+};
+
+// Restricciones de límite de peticiones (Login)
 const rateLimitLogin = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -11,9 +24,10 @@ const rateLimitLogin = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: rateLimitHandler, // Inyectamos nuestro manejador con auditoría
 });
 
-// Un máximo de 3 intentos permite que el 4to dispare la respuesta HTTP 429 Too Many Requests
+// Restricciones de límite de peticiones (Register)
 const rateLimitRegister = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 3,
@@ -23,6 +37,7 @@ const rateLimitRegister = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: rateLimitHandler, // Inyectamos nuestro manejador con auditoría
 });
 
 module.exports = {
