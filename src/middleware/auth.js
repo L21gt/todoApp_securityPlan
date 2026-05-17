@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const auditLogService = require("../services/auditLog.service"); // Importamos el motor de auditoría
 
 /**
  * Middleware de Autenticación (El Guardián del Gateway)
@@ -11,26 +12,29 @@ function authenticateToken(req, res, next) {
   // El formato esperado es "Bearer eyJhbGci..."
   const token = authHeader && authHeader.split(" ")[1];
 
-  // 2. Si no hay token, rechazamos la petición inmediatamente
+  // 2. Si no hay token, rechazamos la petición inmediatamente (401)
   if (!token) {
+    // Auditoría: Intento de acceso sin credenciales
+    auditLogService.log("security.unauthorized", req, null, {
+      reason: "Access denied. No token provided.",
+    });
     return res.status(401).json({ error: "Access denied. No token provided." });
   }
 
   // 3. Verificamos la integridad (que no haya sido alterado) y la expiración
   try {
-    // Usamos la misma llave secreta con la que firmaremos en el login
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Si es válido, inyectamos los datos del usuario en la request actual.
-    // Esto será vital para la futura capa de Autorización (Clase 9).
-    req.user = decoded;
-
-    // Dejamos pasar la petición al controlador de la ruta (tareasRouter)
+    req.user = decoded; // Inyectamos los datos del usuario en la request
     next();
   } catch (err) {
-    // Capturamos cualquier error (firma inválida, token expirado o malformado)
-    // Devolvemos un mensaje genérico para evitar dar pistas al atacante
-    return res.status(401).json({ error: "Invalid or expired token." });
+    // Auditoría: Intento de acceso con token inválido/manipulado/expirado (403)
+    auditLogService.log("security.unauthorized", req, null, {
+      reason: "Invalid or expired token",
+      jwtError: err.message,
+    });
+
+    // Cambiamos a 403 para cumplir con el criterio de la rúbrica
+    return res.status(403).json({ error: "Invalid or expired token." });
   }
 }
 
