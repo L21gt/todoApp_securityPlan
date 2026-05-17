@@ -1,15 +1,24 @@
+jest.setTimeout(30000); // Dar más tiempo a la base de datos en memoria
+
+// Configuramos el secreto de JWT antes de cualquier importación
+process.env.JWT_SECRET = "secreto_super_seguro_de_pruebas_jest_123";
+
 const request = require("supertest");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-// INYECCIÓN DE MOCK: Engañamos al sistema de seguridad para que deje pasar las pruebas
+// INYECCIÓN DE MOCK 1: Engañamos al sistema de seguridad (Auth)
 jest.mock("../../src/middleware/auth", () => {
   return (req, res, next) => {
-    // Simulamos que un usuario legítimo ya pasó la validación del token
     req.user = { userId: "123456789012", email: "test@test.com" };
     next();
   };
 });
+
+// INYECCIÓN DE MOCK 2: Evitamos que el errorHandler intente escribir en BD con la conexión cerrada
+jest.mock("../../src/services/auditLog.service", () => ({
+  log: jest.fn(), // Reemplazamos la función real por una función vacía
+}));
 
 const app = require("../../src/app");
 const Tarea = require("../../src/models/tarea.model");
@@ -26,6 +35,7 @@ beforeAll(
 );
 
 afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 500)); // Pequeña espera para asegurar que no haya operaciones pendientes
   await mongoose.disconnect();
   await mongoServer.stop();
 });
@@ -104,23 +114,20 @@ test("GET /api/tareas/:id devuelve 404 para un ID inexistente", async () => {
   expect(res.body.error).toBe("Not found");
 });
 
-//  SOLUCIÓN 5: Validación de campos requeridos
+// SOLUCIÓN 5: Validación de campos requeridos
 test("POST /api/tareas valida campos requeridos", async () => {
-  //  Corrección: Enviar objeto vacío para probar validación
-  const res1 = await request(app).post("/api/tareas").send({}); //  Sin título para fallar validación
+  const res1 = await request(app).post("/api/tareas").send({});
 
-  expect(res1.statusCode).toBe(422); //  Error de validación
-  expect(res1.body.error).toContain("required"); //  Mensaje de validación
+  // Ahora esperamos 422 (JOI Validation) en lugar de 500
+  expect(res1.statusCode).toBe(422);
+  expect(res1.body.error).toContain("Validation"); // El mensaje de JOI
 
-  //  Test adicional: Título vacío
   const res2 = await request(app).post("/api/tareas").send({ title: "" });
+  expect(res2.statusCode).toBe(422);
+  expect(res2.body.error).toContain("Validation");
 
-  expect(res2.statusCode).toBe(500);
-  expect(res2.body.error).toContain("required");
-
-  //  Corrección: Verificar que NO se guardó en la BD
   const tareasEnDB = await Tarea.find();
-  expect(tareasEnDB).toHaveLength(0); //  No debe haber tareas
+  expect(tareasEnDB).toHaveLength(0);
 });
 
 //  SOLUCIÓN 6: Array vacío
@@ -264,42 +271,33 @@ describe(" SOLUCIONES CORRECTAS - EJERCICIOS AVANZADOS", () => {
     // Caso 2: ID válido pero inexistente
     const idInexistente = new mongoose.Types.ObjectId().toString();
     const res2 = await request(app).get(`/api/tareas/${idInexistente}`);
-    expect(res2.statusCode).toBe(404); //  No encontrado
-    expect(res2.body.error).toBe("Not found"); //  Propiedad correcta
+    expect(res2.statusCode).toBe(404);
+    expect(res2.body.error).toBe("Not found");
 
-    //  Verificar también PUT y DELETE con ID inválido
+    // Verificar también PUT y DELETE con ID inválido
     const putRes = await request(app)
       .put(`/api/tareas/${idInvalido}`)
       .send({ title: "Test" });
-    expect(putRes.statusCode).toBe(500);
+    expect(putRes.statusCode).toBe(400); // Ahora devuelve 400 Bad Request, no 500
 
     const deleteRes = await request(app).delete(`/api/tareas/${idInvalido}`);
-    expect(deleteRes.statusCode).toBe(500);
+    expect(deleteRes.statusCode).toBe(400); // Ahora devuelve 400 Bad Request, no 500
   });
 
-  //  SOLUCIÓN 12: Validación avanzada
+  // SOLUCIÓN 12: Validación avanzada
   test("POST /api/tareas maneja campos adicionales correctamente", async () => {
     const tareaConCamposExtra = {
       title: "Tarea válida",
       completed: true,
       campoExtra: "debería ser ignorado",
-      numeroExtra: 123,
-      objetoExtra: { foo: "bar" },
     };
 
     const res = await request(app)
       .post("/api/tareas")
       .send(tareaConCamposExtra);
 
-    //  Corrección: Mongoose crea exitosamente ignorando campos extra
+    // Como implementamos JOI estricto (Zero Trust), los campos extra no se ignoran, se RECHAZAN
     expect(res.statusCode).toBe(422);
-    expect(res.body.title).toBe("Tarea válida");
-    expect(res.body.completed).toBe(true);
-
-    //  Mongoose ignora campos no definidos en el schema
-    expect(res.body.campoExtra).toBeUndefined();
-    expect(res.body.numeroExtra).toBeUndefined();
-    expect(res.body.objetoExtra).toBeUndefined();
   });
 });
 
