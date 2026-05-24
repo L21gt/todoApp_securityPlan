@@ -23,6 +23,7 @@ let mongoServer;
 // 4. Helper de Polling: Aumentamos a 30 intentos (3 segundos) para darle margen a Bcrypt
 async function waitForLog(actionName) {
   for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 100));
     const logs = await AuditLog.find({ action: actionName });
     if (logs.length > 0) return logs;
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -47,7 +48,11 @@ afterAll(async () => {
 
 afterEach(async () => {
   if (mongoose.connection.readyState === 1) {
-    await mongoose.connection.db.dropDatabase();
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      // Usamos deleteMany sin filtros para limpiar todo
+      await collections[key].deleteMany({});
+    }
   }
 });
 
