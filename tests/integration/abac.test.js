@@ -408,3 +408,107 @@ describe("Cobertura Forzada - projects.js y tarea.model.js", () => {
     } catch (e) {}
   });
 });
+
+// =================================================================
+// 🔥 COBERTURA FINAL: ORGS, COMENTARIOS Y SUPER ADMIN 🔥
+// =================================================================
+describe("Nuevos Endpoints - Orgs, Comments, Admin", () => {
+  let commentId;
+
+  test("1. Organizaciones: Crear y Listar", async () => {
+    const resPost = await request(app)
+      .post("/api/orgs")
+      .set("Authorization", `Bearer ${testData.tokens.admin}`)
+      .send({ name: "Org Test", description: "Test" });
+    expect(resPost.statusCode).toBe(201);
+
+    const resGet = await request(app)
+      .get("/api/orgs")
+      .set("Authorization", `Bearer ${testData.tokens.admin}`);
+    expect(resGet.statusCode).toBe(200);
+  });
+
+  test("2. Comentarios: Flujo completo y Seguridad", async () => {
+    // A. Crear comentario
+    const resPost = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${testData.tokens.dev1}`)
+      .send({ taskId: testData.taskDev1Id, body: "Primer comentario" });
+    expect(resPost.statusCode).toBe(201);
+    commentId = resPost.body._id;
+
+    // B. Editar como dueño (Exito)
+    const resEdit = await request(app)
+      .put(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev1}`)
+      .send({ body: "Editado" });
+    expect(resEdit.statusCode).toBe(200);
+
+    // C. Editar como OTRO usuario (403 Acceso Denegado)
+    const resEditHack = await request(app)
+      .put(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev2}`)
+      .send({ body: "Hacker" });
+    expect(resEditHack.statusCode).toBe(403);
+
+    // D. Borrar como OTRO usuario (403 Acceso Denegado)
+    const resDelHack = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev2}`);
+    expect(resDelHack.statusCode).toBe(403);
+
+    // E. Borrar como DUEÑO (Exito)
+    const resDel = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev1}`);
+    expect(resDel.statusCode).toBe(204);
+
+    // F. Intentar editar/borrar algo que ya no existe (404)
+    const fakeId = new mongoose.Types.ObjectId();
+    await request(app)
+      .put(`/api/comments/${fakeId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev1}`)
+      .send({ body: "Ghost" });
+    await request(app)
+      .delete(`/api/comments/${fakeId}`)
+      .set("Authorization", `Bearer ${testData.tokens.dev1}`);
+  });
+
+  test("3. Super Admin: Seguridad y Funciones", async () => {
+    // A. Intento de acceso sin ser super_admin (debe fallar con 403)
+    const resFail = await request(app)
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${testData.tokens.admin}`);
+    expect(resFail.statusCode).toBe(403);
+
+    // B. Promover al admin a 'super_admin' directamente en la BD para la prueba
+    const User = require("../../src/models/user.model");
+    await User.updateOne({ email: "admin@test.com" }, { role: "super_admin" });
+
+    // C. Acceso exitoso a usuarios y logs de auditoría
+    const resUsers = await request(app)
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${testData.tokens.admin}`);
+    expect(resUsers.statusCode).toBe(200);
+
+    const resLogs = await request(app)
+      .get("/api/admin/logs")
+      .set("Authorization", `Bearer ${testData.tokens.admin}`);
+    expect(resLogs.statusCode).toBe(200);
+
+    // D. Banear a un usuario cambiando su isActive a false
+    const dev2 = await User.findOne({ email: "dev2@test.com" });
+    const resBan = await request(app)
+      .put(`/api/admin/users/${dev2._id}/status`)
+      .set("Authorization", `Bearer ${testData.tokens.admin}`)
+      .send({ isActive: false });
+    expect(resBan.statusCode).toBe(200);
+
+    // E. Manejo de error (404) al banear usuario inexistente
+    const fakeId = new mongoose.Types.ObjectId();
+    await request(app)
+      .put(`/api/admin/users/${fakeId}/status`)
+      .set("Authorization", `Bearer ${testData.tokens.admin}`)
+      .send({ isActive: false });
+  });
+});
