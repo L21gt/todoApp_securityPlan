@@ -54,4 +54,10 @@ app.use("/api/projects", require("./routes/projects"));
 // === RUTAS DE ORGANIZACIONES ===
 app.use("/api/orgs", require("./routes/organizations"));
 
+// === RUTAS DE COMENTARIOS ===
+app.use("/api/comments", require("./routes/comments"));
+
+// === RUTAS DEL SUPER ADMIN ===
+app.use("/api/admin", require("./routes/admin"));
+
 module.exports = app;
