@@ -48,4 +48,7 @@ app.get("/", (req, res) =>
 // Este middleware captura cualquier error que ocurra en las rutas anteriores y responde de forma segura.
 app.use(errorHandler);
 
+// === RUTAS DE PROYECTOS ===
+app.use("/api/projects", require("./routes/projects"));
+
 module.exports = app;
