@@ -1,12 +1,12 @@
 const User = require("../models/user.model");
-const tokenService = require("./tokenService"); // Importamos nuestro nuevo motor
+const tokenService = require("./tokenService");
 
 // ==========================================
 // CAPA LÓGICA: Authentication Gateway Service
 // ==========================================
 
 // Lógica de registro de nuevos usuarios
-async function register(email, password) {
+async function register(name, email, password) {
   // 1. Verificamos que el correo no esté en uso
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -15,8 +15,8 @@ async function register(email, password) {
     throw error;
   }
 
-  // 2. Creamos el usuario
-  const user = await User.create({ email, password });
+  // 2. Creamos el usuario (ahora incluyendo el nombre)
+  const user = await User.create({ name, email, password });
 
   // 3. Auto-login: Generamos ambos tokens al registrarse
   const accessToken = tokenService.generateAccessToken(user);

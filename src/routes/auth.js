@@ -23,13 +23,17 @@ router.post(
   validate(authSchema),
   async (req, res, next) => {
     try {
-      const { email, password } = req.body;
+      // Extraemos 'name' junto con email y password
+      const { name, email, password } = req.body;
+
+      // Pasamos 'name' como primer parámetro al gateway
       const { accessToken, refreshToken, user } = await authGateway.register(
+        name,
         email,
         password,
       );
 
-      // Auditoría: Registro de usuario exitoso (Fire-and-forget, sin await para no bloquear respuesta)
+      // Auditoría: Registro de usuario exitoso
       auditLogService.log("auth.register", req, user._id);
 
       res.status(201).json({
@@ -50,7 +54,7 @@ router.post(
   rateLimitLogin,
   validate(authSchema),
   async (req, res, next) => {
-    const { email, password } = req.body; // Extraído fuera del try para usarlo en el catch
+    const { email, password } = req.body;
 
     try {
       const { accessToken, refreshToken, user } = await authGateway.login(
@@ -68,9 +72,7 @@ router.post(
         user,
       });
     } catch (err) {
-      // Auditoría: Fallo de login (Interceptamos el error 401 del Gateway)
       if (err.statusCode === 401) {
-        // Registramos el email que intentó ingresar como 'user', aunque no exista en BD
         auditLogService.log("auth.login.failure", req, email, {
           reason: err.message,
         });
@@ -103,7 +105,6 @@ router.post("/logout", (req, res, next) => {
 
     tokenService.revokeRefreshToken(refreshToken);
 
-    // Auditoría: Cierre de sesión (Enmascaramos el token parcial por seguridad)
     const maskedToken = refreshToken.substring(0, 10) + "...";
     auditLogService.log("auth.logout", req, null, { tokenUsado: maskedToken });
 

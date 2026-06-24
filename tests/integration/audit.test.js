@@ -1,3 +1,4 @@
+// tests/integration/audit.test.js
 // 1. Ampliamos el timeout global a 30 segundos para evitar cortes
 jest.setTimeout(30000);
 
@@ -50,7 +51,6 @@ afterEach(async () => {
   if (mongoose.connection.readyState === 1) {
     const collections = mongoose.connection.collections;
     for (const key in collections) {
-      // Usamos deleteMany sin filtros para limpiar todo
       await collections[key].deleteMany({});
     }
   }
@@ -64,7 +64,6 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
 
     expect(res.statusCode).toBe(401);
 
-    // Usamos el Helper en lugar de un timeout fijo
     const logs = await waitForLog("auth.login.failure");
 
     expect(logs).not.toHaveLength(0);
@@ -73,6 +72,7 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
 
   test('Debe registrar "auth.register" y "auth.login.success"', async () => {
     const credenciales = {
+      name: "Nuevo Usuario", // INYECTADO AQUI
       email: "nuevo@usuario.com",
       password: "Password123!",
     };
@@ -80,7 +80,7 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
     const resRegistro = await request(app)
       .post("/api/auth/register")
       .send(credenciales);
-    expect(resRegistro.statusCode).toBe(201); // Ya no será 500 gracias al mock de JWT
+    expect(resRegistro.statusCode).toBe(201);
 
     const resLogin = await request(app)
       .post("/api/auth/login")
@@ -118,30 +118,22 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
   });
 
   test("Debe fallar el logout y refresh si no hay token (Cubre branches if/else)", async () => {
-    // Disparamos los "if (!refreshToken)" enviando peticiones sin body
     const resLogout = await request(app).post("/api/auth/logout").send({});
-    expect(resLogout.statusCode).toBe(400); // Esperamos un Bad Request
+    expect(resLogout.statusCode).toBe(400);
 
     const resRefresh = await request(app).post("/api/auth/refresh").send({});
-    expect(resRefresh.statusCode).toBe(400); // Esperamos un Bad Request
+    expect(resRefresh.statusCode).toBe(400);
   });
 
   test("Debe intentar refrescar un token (Cubre branches en tokenService)", async () => {
-    // Enviamos un token para forzar al tokenService a ejecutar su lógica interna
     const res = await request(app)
       .post("/api/auth/refresh")
       .send({ refreshToken: "un_token_para_refrescar_123" });
 
-    // Al usar el mock de JWT, esto será rechazado, pero logrará cubrir los "catch" y los "if"
     expect(res.statusCode).toBeDefined();
   });
 
-  // ========================================================
-  // TESTS DE COBERTURA DE RAMAS (BRANCH COVERAGE) Y SEGURIDAD
-  // ========================================================
-
   test("Debe rechazar acceso si no se envía ningún token (Cubre branch en middleware auth)", async () => {
-    // Petición SIN header Authorization para disparar el if (!token)
     const res = await request(app).get("/api/tareas");
     expect(res.statusCode).toBe(401);
 
@@ -151,26 +143,27 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
 
   test("Debe rechazar registro de usuario duplicado (Cubre branch en authGateway)", async () => {
     const credenciales = {
+      name: "Usuario Duplicado", // INYECTADO AQUI
       email: "duplicado@test.com",
       password: "Password123!",
     };
 
-    // 1. Registramos el usuario la primera vez
     await request(app).post("/api/auth/register").send(credenciales);
 
-    // 2. Intentamos registrarlo de nuevo para disparar el if (existingUser)
     const res = await request(app)
       .post("/api/auth/register")
       .send(credenciales);
-    expect(res.statusCode).toBe(409); // 409 Conflict
+    expect(res.statusCode).toBe(409);
   });
 
   test("Debe rechazar login con password incorrecto de un usuario EXISTENTE (Cubre branch isValid)", async () => {
-    // 1. Creamos un usuario real
-    const credenciales = { email: "existe@test.com", password: "Password123!" };
+    const credenciales = {
+      name: "Usuario Existe",
+      email: "existe@test.com",
+      password: "Password123!",
+    };
     await request(app).post("/api/auth/register").send(credenciales);
 
-    // 2. Iniciamos sesión con clave mala para disparar el if (!isValid) de bcrypt
     const res = await request(app)
       .post("/api/auth/login")
       .send({ email: "existe@test.com", password: "clave_equivocada" });
@@ -178,14 +171,12 @@ describe("🛡️ SEGURIDAD Y AUDITORÍA - INTEGRATION TESTS", () => {
   });
 
   test("Debe disparar security.rate_limited al exceder intentos de login (Cubre rateLimiter)", async () => {
-    // Disparamos 6 peticiones de login seguidas muy rápido para rebasar el límite de 5
     for (let i = 0; i < 6; i++) {
       await request(app)
         .post("/api/auth/login")
         .send({ email: "spam@test.com", password: "123" });
     }
 
-    // El manejador rateLimitHandler debería atrapar la 6ta petición y guardarla
     const logs = await waitForLog("security.rate_limited");
     expect(logs).not.toHaveLength(0);
   });
