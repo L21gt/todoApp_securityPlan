@@ -51,4 +51,7 @@ app.use(errorHandler);
 // === RUTAS DE PROYECTOS ===
 app.use("/api/projects", require("./routes/projects"));
 
+// === RUTAS DE ORGANIZACIONES ===
+app.use("/api/orgs", require("./routes/organizations"));
+
 module.exports = app;
