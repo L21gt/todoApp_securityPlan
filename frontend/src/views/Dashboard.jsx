@@ -33,6 +33,16 @@ const Dashboard = () => {
         <div className="user-controls">
           <span>Hola, <strong>{user?.name || 'Usuario'}</strong></span>
           <button onClick={logout} className="btn-danger">Cerrar Sesión</button>
+          
+          {/* ✅ Condicionamos el botón verificando el role del usuario */}
+          {user?.role === 'super_admin' && (
+            <button 
+              className="btn-primary btn-auto btn-admin" 
+              onClick={() => navigate('/admin')}
+            >
+              Panel Admin
+            </button>
+          )}
         </div>
       </header>
 

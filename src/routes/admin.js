@@ -53,11 +53,10 @@ router.put("/users/:id/status", async (req, res, next) => {
 });
 
 // GET /api/admin/logs -> Consultar los registros de auditoría
-router.get("/logs", async (req, res, next) => {
+router.get(["/audit-logs", "/logs"], async (req, res, next) => {
   try {
-    // Limitamos a los últimos 100 registros ordenados descendentemente
     const logs = await AuditLog.find()
-      .sort({ timestamp: -1 })
+      .sort({ timestamp: -1, createdAt: -1 }) // Ordenamos por cualquiera de los dos campos de fecha
       .limit(100)
       .lean();
     res.json(logs);

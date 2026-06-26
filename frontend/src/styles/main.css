@@ -310,3 +310,67 @@ body {
   margin-top: 1.5rem;
   width: 100%;
 }
+
+/* --- Panel de Super Admin --- */
+.admin-table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: var(--border-radius);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-color);
+  font-size: 0.875rem;
+}
+
+.admin-table th, .admin-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.admin-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.tab-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.btn-tab {
+  background: none;
+  border: none;
+  font-weight: bold;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+}
+
+.btn-tab.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* --- Utilidades de Navegación Admin --- */
+.btn-admin {
+  background-color: #1f2937;
+  margin-right: 1rem;
+}
+
+.btn-admin:hover {
+  background-color: #111827;
+}
