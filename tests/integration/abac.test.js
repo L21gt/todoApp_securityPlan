@@ -47,7 +47,10 @@ beforeAll(async () => {
     password: "Password123!",
   });
 
-  const project = await Project.create({ name: "Proyecto SecureCollab" });
+  const project = await Project.create({
+    name: "Proyecto SecureCollab",
+    orgId: new mongoose.Types.ObjectId(),
+  });
 
   await Membership.create({
     userId: admin._id,
@@ -219,7 +222,7 @@ describe("🛡️ Control de Acceso ABAC - Proyectos y Tareas", () => {
 
   test("15. Denegar acceso si el usuario no tiene membresia en el proyecto", async () => {
     const Project = require("../../src/models/project.model");
-    const nuevoProyecto = await Project.create({ name: "Proyecto Vacio" });
+    const nuevoProyecto = await Project.create({ name: "Proyecto Vacio", orgId: new mongoose.Types.ObjectId() });
 
     const res = await request(app)
       .get(`/api/tareas/project/${nuevoProyecto._id}`)
