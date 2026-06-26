@@ -65,7 +65,12 @@ const OrganizationView = () => {
                   Estado: {proj.status}
                 </div>
                 {/* En el futuro, este botón nos llevará al Kanban de tareas */}
-                <button className="btn-primary">Ver Tareas</button>
+                <button 
+                    className="btn-primary" 
+                    onClick={() => navigate(`/projects/${proj._id}`)}
+                    >
+                    Ver Tareas
+                    </button>
               </div>
             ))}
           </div>

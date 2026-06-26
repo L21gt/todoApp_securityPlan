@@ -7,12 +7,22 @@ const authenticateToken = require("../middleware/auth");
 // POST /api/comments -> Crear comentario en una tarea
 router.post("/", authenticateToken, async (req, res, next) => {
   try {
-    const { taskId, body } = req.body;
+    // Aceptamos el taskId y el texto del body directamente
+    const { taskId, text, body } = req.body;
+    const commentText = body || text;
+
+    if (!commentText || !taskId) {
+      return res
+        .status(400)
+        .json({ error: "taskId y cuerpo del comentario son requeridos" });
+    }
+
     const comment = new Comment({
-      taskId,
-      body,
+      taskId: taskId,
+      body: commentText,
       authorId: req.user.userId,
     });
+
     await comment.save();
     res.status(201).json(comment);
   } catch (err) {

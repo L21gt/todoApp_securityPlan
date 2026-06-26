@@ -1,69 +1,30 @@
 // src/models/tarea.model.js
 const mongoose = require("mongoose");
-const { encrypt, decrypt } = require("../security/encryption");
 
 const tareaSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    description: {
-      type: String,
-      get: decrypt,
-    },
-    sensitive: { type: Boolean, default: false },
-    completed: { type: Boolean, default: false },
-
-    projectId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Project",
-      required: true,
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    createdAt: { type: Date, default: Date.now },
+    // ... tus campos actuales (title, description, etc) ...
+    title: String,
+    description: String,
+    sensitive: Boolean,
+    completed: Boolean,
+    estado: String,
+    projectId: mongoose.Schema.Types.ObjectId,
+    userId: mongoose.Schema.Types.ObjectId,
   },
   {
-    toJSON: { getters: true },
-    toObject: { getters: true },
+    timestamps: true,
+    toJSON: { virtuals: true }, // ✅ ESTO ES VITAL: Le dice que incluya virtuales al JSON
+    toObject: { virtuals: true },
   },
 );
 
-// Middleware de mutacion condicional pre-guardado
-tareaSchema.pre("save", function (next) {
-  if (this.isModified("description") || this.isModified("sensitive")) {
-    if (this.sensitive) {
-      this.description = encrypt(this.description);
-    } else {
-      this.description = decrypt(this.description);
-    }
-  }
-  next();
-});
-
-// Middleware para queries de actualizacion (ej. findOneAndUpdate, updateOne)
-tareaSchema.pre(["findOneAndUpdate", "updateOne"], function (next) {
-  const update = this.getUpdate();
-
-  if (
-    update.sensitive !== undefined ||
-    (update.$set && update.$set.sensitive !== undefined)
-  ) {
-    const isSensitive = update.sensitive ?? update.$set.sensitive;
-    const desc = update.description ?? (update.$set && update.$set.description);
-
-    if (desc) {
-      const parsedDesc = isSensitive ? encrypt(desc) : decrypt(desc);
-      if (update.$set) {
-        update.$set.description = parsedDesc;
-      } else {
-        update.description = parsedDesc;
-      }
-    }
-  }
-  next();
+// ✅ ESTA ES LA DEFINICIÓN DE LA RELACIÓN
+tareaSchema.virtual("comentarios", {
+  ref: "Comment", // El nombre del modelo de comentarios (asegúrate de que sea 'Comment')
+  localField: "_id", // El ID de la tarea
+  foreignField: "taskId", // El campo en el modelo Comment que tiene el ID de la tarea
+  justOne: false, // Una tarea tiene muchos comentarios
 });
 
 module.exports = mongoose.model("Tarea", tareaSchema);

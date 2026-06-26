@@ -10,6 +10,8 @@ const authenticateToken = require("./middleware/auth");
 const app = express();
 const errorHandler = require("./middleware/errorHandler");
 
+app.use(express.json());
+
 // === CAPA 1: Headers de seguridad (Clase 4) ===
 // Utilizamos Helmet para agregar 11+ headers de seguridad automáticamente.
 // Esto soluciona la vulnerabilidad de Information Disclosure ocultando "X-Powered-By".
@@ -56,6 +58,8 @@ app.use("/api/orgs", require("./routes/organizations"));
 
 // === RUTAS DE COMENTARIOS ===
 app.use("/api/comments", require("./routes/comments"));
+
+app.use("/api/comentarios", require("./routes/comments"));
 
 // === RUTAS DEL SUPER ADMIN ===
 app.use("/api/admin", require("./routes/admin"));

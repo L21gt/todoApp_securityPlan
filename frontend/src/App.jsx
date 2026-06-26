@@ -7,6 +7,7 @@ import Login from './views/Login';
 import Register from './views/Register';
 import Dashboard from './views/Dashboard';
 import OrganizationView from './views/OrganizationView';
+import ProjectKanban from './views/ProjectKanban';
 
 import './styles/main.css';
 
@@ -24,6 +25,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
 
             <Route path="/orgs/:orgId" element={<OrganizationView />} />
+            <Route path="/projects/:projectId" element={<ProjectKanban />} />
             {/* Redirección por defecto para rutas protegidas */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>

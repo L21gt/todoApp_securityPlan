@@ -189,3 +189,124 @@ body {
   gap: 1rem;
   margin-top: 1rem;
 }
+
+/* --- Tablero Kanban --- */
+.kanban-board {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto; /* Mantiene el scroll SOLO en pantallas muy pequeñas (celulares) */
+  padding-bottom: 1rem;
+  margin-top: 1.5rem;
+  min-height: 60vh;
+  width: 100%;
+}
+
+.kanban-column {
+  background-color: #f9fafb;
+  border-radius: var(--border-radius);
+  flex: 1; /* ✅ ESTA ES LA CLAVE: Hace que todas las columnas midan lo mismo */
+  min-width: 220px; /* Reducido para que quepan las 4 columnas sin hacer scroll en laptops */
+  max-width: 100%; /* Quitamos la restricción rígida */
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.kanban-column-header {
+  font-weight: 600;
+  color: var(--text-color);
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-card {
+  background-color: var(--surface-color);
+  border: 1px solid #d1d5db;
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-color: var(--primary-color);
+}
+
+.task-title {
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+/* Indicador visual obligatorio para datos sensibles (Rúbrica) */
+.sensitive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #fee2e2;
+  color: var(--error-color);
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  border: 1px solid #f87171;
+}
+
+/* --- Modal de Detalle y Comentarios --- */
+.modal-content-wide {
+  background: var(--surface-color);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.comment-section {
+  margin-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.comment-item {
+  background: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.comment-item small {
+  display: block;
+  font-weight: bold;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+/* --- Utilidades para el Modal de Tareas --- */
+.comment-submit-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.modal-close-btn {
+  margin-top: 1.5rem;
+  width: 100%;
+}

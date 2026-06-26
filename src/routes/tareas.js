@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const Tarea = require("../models/tarea.model");
 const validate = require("../middleware/validate");
-const { tareaSchema } = require("../validators/tarea.validator");
+const { decrypt } = require("../security/encryption");
+const {
+  tareaSchema,
+  actualizarTareaSchema,
+} = require("../validators/tarea.validator");
 
 const {
   checkRead,
@@ -55,27 +59,48 @@ router.post(
 
 router.get("/:id", checkRead, async (req, res, next) => {
   try {
-    return res.json(req.tarea);
-  } catch (err) {
-    next(err);
-  }
-});
+    // Populate anidado: Trae los comentarios, y de cada comentario trae el nombre del autor
+    const tarea = await Tarea.findById(req.params.id)
+      .populate({
+        path: "comentarios",
+        populate: { path: "authorId", select: "name email" }, // Extraemos el nombre del usuario
+      })
+      .lean();
 
-router.put("/:id", validate(tareaSchema), checkEdit, async (req, res, next) => {
-  try {
-    const { title, completed, description, sensitive } = req.body;
+    if (!tarea) return res.status(404).json({ error: "Tarea no encontrada" });
 
-    const tarea = await Tarea.findByIdAndUpdate(
-      req.params.id,
-      { title, completed, description, sensitive },
-      { new: true, runValidators: true },
-    );
+    // Desciframos si es sensible (el código que agregamos antes)
+    if (tarea.sensitive && tarea.description) {
+      const { decrypt } = require("../security/encryption");
+      tarea.description = decrypt(tarea.description);
+    }
 
     return res.json(tarea);
   } catch (err) {
     next(err);
   }
 });
+
+router.put(
+  "/:id",
+  validate(actualizarTareaSchema),
+  checkEdit,
+  async (req, res, next) => {
+    try {
+      const { title, completed, description, sensitive, estado } = req.body;
+
+      const tarea = await Tarea.findByIdAndUpdate(
+        req.params.id,
+        { title, completed, description, sensitive, estado }, // Agregamos estado
+        { new: true, runValidators: true },
+      );
+
+      return res.json(tarea);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 router.delete("/:id", checkEdit, async (req, res, next) => {
   try {
