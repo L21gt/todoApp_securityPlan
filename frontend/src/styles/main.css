@@ -15,6 +15,7 @@ body {
   color: var(--text-color);
 }
 
+/* --- Estados de Carga --- */
 .loader-container {
   display: flex;
   justify-content: center;
@@ -28,7 +29,7 @@ body {
   color: var(--primary-color);
 }
 
-/* Clases utilitarias globales para formularios y errores */
+/* --- Clases Utilitarias (Formularios y Alertas) --- */
 .error-alert {
   background-color: #fee2e2;
   color: var(--error-color);
@@ -65,4 +66,126 @@ body {
 .btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.btn-danger {
+  background-color: var(--error-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn-auto {
+  width: auto;
+}
+
+/* --- Layout Principal --- */
+.dashboard-wrapper {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.user-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* --- Cuadrículas y Tarjetas (Grid & Cards) --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.card {
+  background-color: var(--surface-color);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.card-body {
+  flex-grow: 1;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  border: 1px dashed #d1d5db;
+  color: #6b7280;
+}
+
+/* --- Ventanas Modales --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--surface-color);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
 }

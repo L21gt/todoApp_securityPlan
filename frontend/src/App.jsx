@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from './views/Login';
 import Register from './views/Register';
 import Dashboard from './views/Dashboard';
+import OrganizationView from './views/OrganizationView';
 
 import './styles/main.css';
 
@@ -21,6 +22,8 @@ function App() {
           {/* Rutas Protegidas */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+
+            <Route path="/orgs/:orgId" element={<OrganizationView />} />
             {/* Redirección por defecto para rutas protegidas */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>

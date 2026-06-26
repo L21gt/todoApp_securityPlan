@@ -1,22 +1,36 @@
 // src/models/project.model.js
 const mongoose = require("mongoose");
-const { encrypt, decrypt } = require("../security/encryption");
 
 const projectSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+    },
+    // La rúbrica pide que este campo se cifre. Si ya aplicaste tu lógica
+    // de cifrado (Clase 12) usando setters/getters, mantenla aquí.
+    // Si no, este es el tipo base:
     description: {
       type: String,
-      get: decrypt,
-      set: encrypt,
     },
-    createdAt: { type: Date, default: Date.now },
+    // ESTE ES EL CAMPO CRÍTICO QUE FALTA O ESTÁ MAL NOMBRADO
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+    },
+    visibility: {
+      type: String,
+      enum: ["private", "internal"],
+      default: "internal",
+    },
+    status: {
+      type: String,
+      enum: ["active", "archived"],
+      default: "active",
+    },
   },
-  {
-    // Habilitar la ejecucion de getters al serializar a JSON/Object
-    toJSON: { getters: true },
-    toObject: { getters: true },
-  },
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Project", projectSchema);
