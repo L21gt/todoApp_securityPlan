@@ -8,11 +8,9 @@ const Login = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Envolvemos la función login del contexto dentro de nuestro hook para aprovechar
-  // la sanitización de DOMPurify y la extracción de errores de Axios.
   const { execute, isLoading, error } = useSecureSubmit(async (data) => {
     await login(data.email, data.password);
-    return { data: { success: true } }; // Retorno dummy para cumplir con la estructura del hook
+    return { data: { success: true } };
   });
 
   const handleChange = (e) => {
@@ -23,15 +21,14 @@ const Login = () => {
     e.preventDefault();
     const result = await execute(formData);
     
-    // Si no hubo errores, los tokens ya están en memoria gracias al AuthContext
     if (result.success) {
       navigate('/dashboard');
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', backgroundColor: 'var(--surface-color)', borderRadius: 'var(--border-radius)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Acceso a SecureCollab</h2>
+    <div className="auth-card">
+      <h2 className="auth-title">Acceso a SecureCollab</h2>
       
       {error && <div className="error-alert">{error}</div>}
       
@@ -65,8 +62,8 @@ const Login = () => {
         </button>
       </form>
       
-      <p style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-        ¿No tienes cuenta? <Link to="/register" style={{ color: 'var(--primary-color)' }}>Regístrate aquí</Link>
+      <p className="auth-footer">
+        ¿No tienes cuenta? <Link to="/register" className="auth-link">Regístrate aquí</Link>
       </p>
     </div>
   );

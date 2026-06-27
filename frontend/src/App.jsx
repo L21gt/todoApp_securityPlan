@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useContext } from 'react'; // ✅ Agregamos useContext
-import { AuthProvider, AuthContext } from './context/AuthContext'; // ✅ Importamos AuthContext
+import { useContext, useEffect, useState } from 'react'; 
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Importación de vistas
@@ -13,13 +13,11 @@ import AdminPanel from './views/AdminPanel';
 
 import './styles/main.css';
 
-// ✅ 1. Creamos el componente guardián exclusivo para Super Admins
 const AdminRoute = ({ children }) => {
   const { user, isLoading } = useContext(AuthContext);
 
   if (isLoading) return <p>Cargando permisos...</p>;
   
-  // Si existe un usuario logueado pero su rol NO es super_admin, lo pateamos
   if (user && user.role !== 'super_admin') {
     return <Navigate to="/dashboard" replace />;
   }
@@ -28,37 +26,52 @@ const AdminRoute = ({ children }) => {
 };
 
 function App() {
+  // ✅ Estado global para el modo oscuro
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Rutas Públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
-          {/* Rutas Protegidas */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-
             <Route path="/orgs/:orgId" element={<OrganizationView />} />
             <Route path="/projects/:projectId" element={<ProjectKanban />} />
-            {/* Redirección por defecto para rutas protegidas */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
-            {/* ✅ 2. Protegemos la ruta /admin envolviéndola en el guardián */}
-            <Route 
-              path="/admin" 
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              } 
-            />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            } />
           </Route>
-
-          {/* Fallback para rutas inexistentes */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+
+        {/* ✅ Botón Flotante para Dark Mode */}
+        <button 
+          className="theme-toggle-btn" 
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          title="Alternar Modo Oscuro"
+        >
+          {isDarkMode ? '☀️' : '🌙'}
+        </button>
+
       </AuthProvider>
     </BrowserRouter>
   );

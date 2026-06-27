@@ -60,9 +60,16 @@ const OrganizationView = () => {
             {projects.map((proj) => (
               <div key={proj._id} className="card">
                 <h3 className="card-title">{proj.name}</h3>
+                {/* En frontend/src/views/OrganizationView.jsx */}
                 <div className="card-body">
-                  Visibilidad: {proj.visibility} <br />
-                  Estado: {proj.status}
+                  <div className="badge-container">
+                    <span className={`badge-tag ${proj.visibility === 'private' ? 'badge-private' : 'badge-internal'}`}>
+                      {proj.visibility}
+                    </span>
+                    <span className={`badge-tag ${proj.status === 'active' ? 'badge-active' : 'badge-archived'}`}>
+                      {proj.status}
+                    </span>
+                  </div>
                 </div>
                 {/* En el futuro, este botón nos llevará al Kanban de tareas */}
                 <button 

@@ -7,7 +7,6 @@ const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const navigate = useNavigate();
 
-  // Conectamos nuestra API con el Hook de seguridad para sanitizar inputs y manejar errores
   const { execute, isLoading, error } = useSecureSubmit((data) =>
     apiClient.post('/auth/register', data)
   );
@@ -20,17 +19,15 @@ const Register = () => {
     e.preventDefault();
     const result = await execute(formData);
     
-    // Si la petición sanitizada fue exitosa, enviamos al usuario al login
     if (result.success) {
       navigate('/login');
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', backgroundColor: 'var(--surface-color)', borderRadius: 'var(--border-radius)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Crear Cuenta en SecureCollab</h2>
+    <div className="auth-card">
+      <h2 className="auth-title">Crear Cuenta en SecureCollab</h2>
       
-      {/* Alerta de Error (401, 409, 422, 429) mapeada por el hook */}
       {error && <div className="error-alert">{error}</div>}
       
       <form onSubmit={handleSubmit}>
@@ -76,8 +73,8 @@ const Register = () => {
         </button>
       </form>
       
-      <p style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-        ¿Ya tienes una cuenta? <Link to="/login" style={{ color: 'var(--primary-color)' }}>Inicia sesión aquí</Link>
+      <p className="auth-footer">
+        ¿Ya tienes una cuenta? <Link to="/login" className="auth-link">Inicia sesión aquí</Link>
       </p>
     </div>
   );

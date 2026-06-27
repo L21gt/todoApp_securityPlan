@@ -8,6 +8,84 @@
   --border-radius: 8px;
 }
 
+/* --- Variables de Modo Oscuro --- */
+body.dark-theme {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+body.dark-theme .dashboard-wrapper,
+body.dark-theme .modal-content-wide,
+body.dark-theme .modal-content,
+body.dark-theme .card,
+body.dark-theme .kanban-column,
+body.dark-theme .admin-table {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border-color: #374151;
+}
+
+body.dark-theme .kanban-column {
+  background-color: #1f2937;
+}
+
+body.dark-theme .task-card {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+body.dark-theme .admin-table th, 
+body.dark-theme .admin-table td {
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+body.dark-theme .admin-table th {
+  background-color: #111827;
+}
+
+body.dark-theme input, 
+body.dark-theme select, 
+body.dark-theme textarea {
+  background-color: #374151;
+  color: white;
+  border-color: #4b5563;
+}
+
+/* --- Botón Flotante Modo Oscuro --- */
+.theme-toggle-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1);
+  background-color: #1f2937;
+}
+
+/* Evitamos que la tarjeta se vea "rara" al arrastrarla */
+.task-card[draggable="true"] {
+  cursor: grab;
+}
+.task-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -373,4 +451,83 @@ body {
 
 .btn-admin:hover {
   background-color: #111827;
+}
+
+/* --- Badges de Proyectos --- */
+.badge-container {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem 0;
+  flex-wrap: wrap;
+}
+
+.badge-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Colores para Visibilidad */
+.badge-private {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.badge-internal {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+/* Colores para Estado */
+.badge-active {
+  background-color: #dcfce3;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.badge-archived {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+/* --- Utilidades de Autenticación (Login / Register) --- */
+.auth-card {
+  max-width: 400px;
+  margin: 4rem auto;
+  padding: 2rem;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.auth-title {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.auth-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* ✅ Regla de Modo Oscuro para las tarjetas de Login/Register */
+body.dark-theme .auth-card {
+  background-color: #1f2937;
+  color: #f9fafb;
 }

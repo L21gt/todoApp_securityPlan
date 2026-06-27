@@ -13,7 +13,6 @@ const ProjectKanban = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
 
-  // Endpoint para listar tareas del proyecto (Ajusta la ruta si tu backend usa otra)
   const { execute, error } = useSecureSubmit(() => apiClient.get(`/tareas/project/${projectId}`));
 
   const fetchTasks = useCallback(async () => {
@@ -22,15 +21,33 @@ const ProjectKanban = () => {
       setTasks(result.data);
     }
     setIsFetching(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [execute]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
   }, [fetchTasks]);
 
-  // Agrupar tareas por estado (usamos un fallback a "To Do" si no tienen estado aún)
+  // ✅ Función principal del Drag & Drop
+  const handleDrop = async (e, newStatus) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    
+    if (!taskId) return;
+
+    // Actualización optimista: Movemos la tarjeta visualmente al instante para que se sienta rápido
+    setTasks(prevTasks => prevTasks.map(t => t._id === taskId ? { ...t, estado: newStatus } : t));
+
+    try {
+      // Hacemos la petición por detrás
+      await apiClient.put(`/tareas/${taskId}`, { estado: newStatus });
+    } catch (error) {
+      console.error("Error al mover la tarea:", error);
+      alert("No tienes permisos para mover esta tarea o hubo un error.");
+      fetchTasks(); // Si falla (ej. error 403 de ABAC), revertimos al estado real de la BD
+    }
+  };
+
   const groupedTasks = {
     'To Do': tasks.filter(t => t.estado === 'To Do' || !t.estado), 
     'In Progress': tasks.filter(t => t.estado === 'In Progress'),
@@ -63,15 +80,27 @@ const ProjectKanban = () => {
       ) : (
         <div className="kanban-board">
           {Object.entries(groupedTasks).map(([columnName, columnTasks]) => (
-            <div key={columnName} className="kanban-column">
+            <div 
+              key={columnName} 
+              className="kanban-column"
+              // ✅ Eventos para que la columna acepte que le suelten cosas
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, columnName)}
+            >
               <div className="kanban-column-header">
                 <span>{columnName}</span>
                 <span className="badge" style={{ marginBottom: 0 }}>{columnTasks.length}</span>
               </div>
               
               {columnTasks.map(task => (
-                <div key={task._id} className="task-card" onClick={() => setSelectedTaskId(task._id)}>
-                  {/* Cumplimiento de Rúbrica: Indicador visual de tarea sensible */}
+                <div 
+                  key={task._id} 
+                  className="task-card" 
+                  onClick={() => setSelectedTaskId(task._id)}
+                  // ✅ Eventos para que la tarjeta se pueda arrastrar
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData('taskId', task._id)}
+                >
                   {task.sensitive && (
                     <div className="sensitive-badge">
                       🔒 Información Sensible
@@ -83,7 +112,7 @@ const ProjectKanban = () => {
               
               {columnTasks.length === 0 && (
                 <div style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center', marginTop: '1rem' }}>
-                  Sin tareas
+                  Suelta una tarea aquí
                 </div>
               )}
             </div>

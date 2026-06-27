@@ -28,9 +28,11 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       const { refreshToken } = getTokens();
 
+      // Escenario 1: No hay refresh token disponible
       if (!refreshToken) {
         clearTokens();
         window.dispatchEvent(new Event("auth:logout"));
+        window.location.href = "/login"; // ✅ Redirección forzada e inmediata
         return Promise.reject(error);
       }
 
@@ -50,8 +52,10 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
+        // Escenario 2: El refresh token también expiró o es inválido
         clearTokens();
         window.dispatchEvent(new Event("auth:logout"));
+        window.location.href = "/login"; // ✅ Redirección forzada e inmediata
         return Promise.reject(refreshError);
       }
     }
