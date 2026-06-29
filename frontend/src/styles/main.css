@@ -531,3 +531,11 @@ body.dark-theme .auth-card {
   background-color: #1f2937;
   color: #f9fafb;
 }
+
+/* --- Utilidades para Tablas --- */
+.truncate-cell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

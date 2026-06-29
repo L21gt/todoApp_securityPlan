@@ -33,11 +33,30 @@ export const TaskDetailModal = ({ taskId, onClose, onSuccess }) => {
     }
 
     const res = await postComment({ text: comment });
+    
+    // ✅ FIX: Manejo explícito del error
     if (res.success) {
       setComment('');
       await loadTask();
       if (onSuccess) onSuccess(); 
       onClose();
+    } else {
+      // Si el backend responde 403 (Privilege Escalation), aquí lo atrapamos
+      const errorMessage = res.error || "No tienes permisos para realizar esta acción.";
+      alert(errorMessage); 
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (window.confirm("¿Deseas eliminar esta tarea?")) {
+      try {
+        await apiClient.delete(`/tareas/${taskId}`);
+        onSuccess(); // Recarga las tareas
+        onClose(); // Cierra el modal
+      } catch (err) {
+        console.error("Error al eliminar la tarea:", err);
+        alert("No tienes permisos para borrar esta tarea.");
+      }
     }
   };
 
@@ -50,6 +69,7 @@ export const TaskDetailModal = ({ taskId, onClose, onSuccess }) => {
             <h2>{task.title}</h2>
             <p>{task.description}</p>
             
+
             <div className="form-group">
                 <label>Estado:</label>
                 <select 
@@ -74,11 +94,20 @@ export const TaskDetailModal = ({ taskId, onClose, onSuccess }) => {
 
             <div className="comment-section">
               <h4>Comentarios</h4>
-              <ul className="comment-list">
+              <ul className="comment-list" style={{ paddingLeft: 0, listStyle: 'none' }}>
                 {task.comentarios?.filter(c => c.text || c.body).map((c, i) => (
-                  <li key={i} className="comment-item">
-                    <small>{c.authorId?.name || c.userName || 'Usuario desconocido'}</small>
-                    {c.text || c.body}
+                  <li key={i} className="comment-item" style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '4px' }}>
+                    
+                    {/* Nombre del Autor en negrita */}
+                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#374151' }}>
+                      {c.authorId?.name || c.authorId?.email || c.userName || 'Usuario desconocido'}
+                    </div>
+                    
+                    {/* Texto del comentario en su propia línea */}
+                    <p style={{ margin: '0.25rem 0 0 0', color: '#111827' }}>
+                      {c.body || c.text}
+                    </p>
+                    
                   </li>
                 ))}
               </ul>
@@ -92,7 +121,11 @@ export const TaskDetailModal = ({ taskId, onClose, onSuccess }) => {
                 <button type="submit" className="btn-primary comment-submit-btn">Enviar</button>
               </form>
             </div>
+
+          
             <button className="btn-danger modal-close-btn" onClick={onClose}>Cerrar</button>
+
+            <button onClick={handleDeleteTask} style={{ backgroundColor: '#dc2626', color: 'white', padding: '0.5rem', borderRadius: '4px', marginTop: '1rem' }}>🗑️ Eliminar Tarea</button>
           </>
         ) : <p>Error al cargar la tarea.</p>}
       </div>

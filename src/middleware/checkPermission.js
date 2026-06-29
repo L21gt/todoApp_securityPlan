@@ -39,6 +39,11 @@ const canEditTask = (membership, task, userId) => {
 // ==========================================
 
 const checkRead = async (req, res, next) => {
+  // ABAC: El super_admin tiene lectura global cross-org
+  if (req.user && req.user.role === "super_admin") {
+    return next();
+  }
+
   try {
     // Si buscamos una tarea específica (GET /api/tasks/:id)
     if (req.params.id) {
@@ -51,11 +56,9 @@ const checkRead = async (req, res, next) => {
       });
 
       if (!canReadTask(membership)) {
-        return res
-          .status(403)
-          .json({
-            error: "Forbidden: No tienes acceso a leer tareas de este proyecto",
-          });
+        return res.status(403).json({
+          error: "Forbidden: No tienes acceso a leer tareas de este proyecto",
+        });
       }
 
       req.tarea = task; // Guardamos en caché para no volver a buscarla en el controlador
@@ -116,11 +119,9 @@ const checkEdit = async (req, res, next) => {
     });
 
     if (!canEditTask(membership, task, req.user.userId)) {
-      return res
-        .status(403)
-        .json({
-          error: "Forbidden: No tienes permisos para editar esta tarea",
-        });
+      return res.status(403).json({
+        error: "Forbidden: No tienes permisos para editar esta tarea",
+      });
     }
 
     req.tarea = task; // Guardamos en caché

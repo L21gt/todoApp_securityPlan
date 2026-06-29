@@ -5,7 +5,6 @@ export const useSecureSubmit = (apiFunction) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ✅ ENVOLVEMOS EN USECALLBACK PARA EVITAR BUCLES
   const execute = useCallback(
     async (formData) => {
       setIsLoading(true);
@@ -33,10 +32,12 @@ export const useSecureSubmit = (apiFunction) => {
           const { status, data, headers } = err.response;
           switch (status) {
             case 401:
-              errorMessage = data.error || "Tu sesión ha expirado.";
-              // Limpiamos memoria y forzamos la redirección
-              localStorage.removeItem("token");
-              window.location.href = "/login";
+              errorMessage =
+                data.error || "Credenciales inválidas o sesión expirada.";
+              // ✅ FIX: Solo redirigimos si NO estamos intentando hacer login
+              if (err.config && !err.config.url.includes("/login")) {
+                window.location.href = "/login";
+              }
               break;
             case 403:
               errorMessage = data.error || "Acceso denegado.";
@@ -59,7 +60,7 @@ export const useSecureSubmit = (apiFunction) => {
       }
     },
     [apiFunction],
-  ); // Dependencia estable
+  );
 
   return { execute, isLoading, error, setError };
 };

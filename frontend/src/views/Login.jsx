@@ -1,12 +1,14 @@
 import { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useSecureSubmit } from '../hooks/useSecureSubmit';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = location.state?.message;
 
   const { execute, isLoading, error } = useSecureSubmit(async (data) => {
     await login(data.email, data.password);
@@ -29,6 +31,9 @@ const Login = () => {
   return (
     <div className="auth-card">
       <h2 className="auth-title">Acceso a SecureCollab</h2>
+      
+      {/* ✅ Banner de éxito */}
+      {successMessage && <div style={{ backgroundColor: '#dcfce3', color: '#166534', padding: '1rem', borderRadius: '4px', marginBottom: '1rem', textAlign: 'center' }}>{successMessage}</div>}
       
       {error && <div className="error-alert">{error}</div>}
       

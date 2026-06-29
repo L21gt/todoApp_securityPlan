@@ -11,8 +11,9 @@ const OrganizationView = () => {
   const [isFetching, setIsFetching] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Endpoint: GET /api/orgs/:orgId/projects
-  const { execute, error } = useSecureSubmit(() => apiClient.get(`/orgs/${orgId}/projects`));
+  // ✅ FIX: Memorizamos la petición de proyectos
+  const fetchOrgProjectsApi = useCallback(() => apiClient.get(`/orgs/${orgId}/projects`), [orgId]);
+  const { execute, error } = useSecureSubmit(fetchOrgProjectsApi);
 
   const fetchProjects = useCallback(async () => {
     const result = await execute();
@@ -20,13 +21,92 @@ const OrganizationView = () => {
       setProjects(result.data);
     }
     setIsFetching(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId]);
+  }, [execute]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProjects();
   }, [fetchProjects]);
+
+  // ✅ Función rápida para invitar a un usuario durante la demostración
+  const handleInviteMember = async () => {
+    const email = window.prompt("Ingresa el correo electrónico del usuario que deseas invitar:");
+    if (!email) return;
+
+    try {
+      // Llamamos al endpoint definido en tu rúbrica
+      await apiClient.post(`/orgs/${orgId}/members`, { email, role: 'member' });
+      alert(`¡Usuario ${email} invitado exitosamente a la organización!`);
+    } catch (err) {
+      alert("Error al invitar: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // ✅ Función para editar la organización
+  const handleEditOrg = async () => {
+    const newName = window.prompt("Ingresa el nuevo nombre de la organización:");
+    if (!newName) return;
+
+    try {
+      await apiClient.put(`/orgs/${orgId}`, { name: newName });
+      alert("Organización actualizada exitosamente.");
+    } catch (err) {
+      alert("Error al editar: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // ✅ Función para eliminar la organización
+  const handleDeleteOrg = async () => {
+    if (window.confirm("🚨 ¿Deseas eliminar esta organización por completo?")) {
+      try {
+        await apiClient.delete(`/orgs/${orgId}`);
+        alert("Organización eliminada.");
+        navigate('/dashboard'); // Regresamos al panel principal
+      } catch (err) {
+        alert("Error al eliminar: " + (err.response?.data?.error || err.message));
+      }
+    }
+  };
+
+  // ✅ Función para remover a un miembro por CORREO
+  const handleRemoveMember = async () => {
+    const email = window.prompt("Ingresa el CORREO ELECTRÓNICO del usuario que deseas remover:");
+    if (!email) return;
+
+    try {
+      // 1. Obtenemos la organización para buscar el ID de ese correo
+      const res = await apiClient.get(`/orgs/${orgId}`);
+      const memberObj = res.data.members.find(m => m.userId?.email === email);
+
+      if (!memberObj) {
+        return alert("Ese usuario no es miembro de la organización o el correo es incorrecto.");
+      }
+
+      const targetUserId = memberObj.userId._id; // Extraemos el ID
+
+      // 2. Ejecutamos el borrado con el ID
+      if (window.confirm(`¿Estás seguro de que deseas remover a ${email}?`)) {
+        await apiClient.delete(`/orgs/${orgId}/members/${targetUserId}`);
+        alert("Miembro removido exitosamente.");
+      }
+    } catch (err) {
+      alert("Error al remover: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // ✅ Función para ver quién está en la organización (Ahora con correos)
+  const handleViewOrgMembers = async () => {
+    try {
+      const res = await apiClient.get(`/orgs/${orgId}`);
+      const org = res.data;
+      // Ahora leemos el email directamente
+      const membersList = org.members.map(m => `👤 Correo: ${m.userId?.email || 'Desconocido'} - [Rol: ${m.role}]`).join('\n');
+      alert(`MIEMBROS DE LA ORGANIZACIÓN:\n\n${membersList}`);
+    } catch(err) {
+      alert("Error al obtener los detalles de la organización.");
+      console.error(err);
+    }
+  };
 
   return (
     <div className="dashboard-wrapper">
@@ -42,9 +122,28 @@ const OrganizationView = () => {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2>Directorio de Proyectos</h2>
-          <button className="btn-primary btn-auto" onClick={() => setIsModalOpen(true)}>
-            + Nuevo Proyecto
+          
+          {/* ✅ Agrupamos los botones */}
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button className="btn-primary btn-auto" onClick={handleViewOrgMembers} style={{ backgroundColor: '#3b82f6' }}>
+              👀 Ver Miembros
             </button>
+            <button className="btn-primary btn-auto" onClick={handleEditOrg} style={{ backgroundColor: '#f59e0b' }}>
+              ✏️ Editar Org
+            </button>
+            <button className="btn-primary btn-auto" onClick={handleDeleteOrg} style={{ backgroundColor: '#dc2626' }}>
+              🗑️ Eliminar Org
+            </button>
+            <button className="btn-primary btn-auto" onClick={handleInviteMember} style={{ backgroundColor: '#059669' }}>
+              + Invitar Miembro
+            </button>
+            <button className="btn-primary btn-auto" onClick={handleRemoveMember} style={{ backgroundColor: '#be123c' }}>
+              - Remover Miembro
+            </button>
+            <button className="btn-primary btn-auto" onClick={() => setIsModalOpen(true)}>
+              + Nuevo Proyecto
+            </button>
+          </div>
         </div>
 
         {isFetching ? (

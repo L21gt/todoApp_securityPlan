@@ -20,7 +20,8 @@ const Register = () => {
     const result = await execute(formData);
     
     if (result.success) {
-      navigate('/login');
+      // Pasamos un estado oculto en la navegación
+      navigate('/login', { state: { message: 'Cuenta creada exitosamente. Inicia sesión.' } });
     }
   };
 

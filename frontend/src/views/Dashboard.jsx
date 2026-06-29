@@ -12,14 +12,15 @@ const Dashboard = () => {
   const [isFetching, setIsFetching] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { execute, error } = useSecureSubmit(() => apiClient.get('/orgs'));
+  // ✅ FIX: Memorizamos la petición de organizaciones
+  const fetchOrganizationsApi = useCallback(() => apiClient.get('/orgs'), []);
+  const { execute, error } = useSecureSubmit(fetchOrganizationsApi);
 
   const fetchOrganizations = useCallback(async () => {
     const result = await execute();
     if (result.success) setOrganizations(result.data);
     setIsFetching(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [execute]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

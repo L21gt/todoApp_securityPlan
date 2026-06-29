@@ -15,7 +15,7 @@ const AdminPanel = () => {
   
   const { execute: fetchUsers, isLoading: loadingUsers } = useSecureSubmit(fetchUsersApi);
   const { execute: fetchLogs, isLoading: loadingLogs } = useSecureSubmit(fetchLogsApi);
-  const { execute: deactivateUser } = useSecureSubmit((id) => apiClient.patch(`/admin/users/${id}/deactivate`));
+  const { execute: deactivateUser } = useSecureSubmit((data) => apiClient.put(`/admin/users/${data.id}/status`, { isActive: false }));
 
   const loadData = useCallback(async () => {
     if (activeTab === 'users') {
@@ -34,7 +34,7 @@ const AdminPanel = () => {
 
   const handleDeactivate = async (userId) => {
     if (window.confirm("¿Estás seguro de que deseas desactivar esta cuenta?")) {
-      const res = await deactivateUser(userId);
+      const res = await deactivateUser({ id: userId }); 
       if (res.success) loadData();
     }
   };
@@ -113,17 +113,30 @@ const AdminPanel = () => {
               </thead>
               <tbody>
                 {logs.map((log, index) => {
-                  // Fallback: Si no existe timestamp, intentamos usar createdAt
                   const logDate = log.timestamp || log.createdAt;
                   const displayDate = logDate ? new Date(logDate).toLocaleString() : 'Fecha desconocida';
+
+                  // Leemos 'log.user' (como lo envía el backend) o usamos el fallback
+                  const displayActor = log.user || log.actorId || 'Sistema / Anónimo';
+
+                  // Procesamos el objeto 'log.details' del backend
+                  let displayResource = 'General (N/A)';
+                  if (log.resourceType || log.resourceId) {
+                    displayResource = `${log.resourceType || 'General'} (${log.resourceId || 'N/A'})`;
+                  } else if (log.details && Object.keys(log.details).length > 0) {
+                    // Si el error tiene un motivo, lo mostramos. Si no, mostramos el objeto.
+                    displayResource = log.details.reason || JSON.stringify(log.details);
+                  }
 
                   return (
                     <tr key={log._id || index}>
                       <td>{displayDate}</td>
                       <td><strong>{log.action || 'Acción desconocida'}</strong></td>
-                      {/* Si el actorId viene vacío, asumimos que fue el sistema */}
-                      <td>{log.actorId || 'Sistema / Anónimo'}</td>
-                      <td>{log.resourceType || 'General'} ({log.resourceId || 'N/A'})</td>
+                      <td>{displayActor}</td>
+                      {/* ✅ FIX: Usamos la clase CSS externa en lugar de estilos en línea */}
+                      <td className="truncate-cell" title={displayResource}>
+                        {displayResource}
+                      </td>
                       <td>{log.ip || 'N/A'}</td>
                     </tr>
                   );

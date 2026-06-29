@@ -62,6 +62,16 @@ router.post(
         password,
       );
 
+      // ✅ CANDADO DE SEGURIDAD: Verificamos si la cuenta está inactiva
+      // Lo hacemos aquí para que la auditoría capture el intento después de validar la contraseña
+      if (user.isActive === false) {
+        const error = new Error(
+          "Tu cuenta ha sido desactivada. Contacta al administrador.",
+        );
+        error.statusCode = 403; // 403 Forbidden es el código HTTP correcto para cuentas baneadas
+        throw error;
+      }
+
       // Auditoría: Login exitoso
       auditLogService.log("auth.login.success", req, user._id);
 
@@ -72,10 +82,10 @@ router.post(
         user,
       });
     } catch (err) {
-      if (err.statusCode === 401) {
-        auditLogService.log("auth.login.failure", req, email, {
-          reason: err.message,
-        });
+      // Manejo seguro del fallo de autenticación para la auditoría
+      if (err.message === "Invalid credentials") {
+        // Ejecutamos la auditoría PERO SIN await para no frenar la respuesta
+        auditLogService.log("auth.login.failure", req, null);
       }
       next(err);
     }

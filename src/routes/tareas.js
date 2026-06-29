@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Tarea = require("../models/tarea.model");
 const validate = require("../middleware/validate");
-const { decrypt } = require("../security/encryption");
+const { encrypt, decrypt } = require("../security/encryption");
 const {
   tareaSchema,
   actualizarTareaSchema,
@@ -36,9 +36,15 @@ router.post(
       const { title, completed, description, sensitive } = req.body;
       const projectId = req.params.projectId;
 
+      // ✅ FIX: Ciframos la descripción ANTES de crear el objeto si sensitive es true
+      let textToSave = description;
+      if (sensitive && description) {
+        textToSave = encrypt(description);
+      }
+
       const tarea = new Tarea({
         title,
-        description,
+        description: textToSave, // Guardamos el texto cifrado
         sensitive,
         completed,
         projectId,
@@ -59,20 +65,47 @@ router.post(
 
 router.get("/:id", checkRead, async (req, res, next) => {
   try {
-    // Populate anidado: Trae los comentarios, y de cada comentario trae el nombre del autor
-    const tarea = await Tarea.findById(req.params.id)
-      .populate({
-        path: "comentarios",
-        populate: { path: "authorId", select: "name email" }, // Extraemos el nombre del usuario
-      })
-      .lean();
-
+    // 1. Buscamos primero la tarea
+    const tarea = await Tarea.findById(req.params.id).lean();
     if (!tarea) return res.status(404).json({ error: "Tarea no encontrada" });
 
-    // Desciframos si es sensible (el código que agregamos antes)
-    if (tarea.sensitive && tarea.description) {
+    // 2. Verificamos membresía para control de acceso sensible
+    const Membership = require("../models/membership.model");
+    const membership = await Membership.findOne({
+      projectId: tarea.projectId,
+      userId: req.user.userId,
+    });
+    const isAuthorized =
+      membership &&
+      (membership.role === "project_admin" || membership.role === "developer");
+
+    // 3. Lógica de población condicional
+    let query = {
+      path: "comentarios",
+      populate: { path: "authorId", select: "name email" },
+    };
+
+    // Si la tarea es sensible y NO es admin ni developer, NO poblamos los comentarios
+    if (tarea.sensitive && !isAuthorized) {
+      // Quitamos los comentarios de la respuesta
+      delete tarea.comentarios;
+    } else {
+      // Poblamos normalmente
+      const TareaConComentarios = await Tarea.findById(req.params.id)
+        .populate({
+          path: "comentarios",
+          populate: { path: "authorId", select: "name email" },
+        })
+        .lean();
+      tarea.comentarios = TareaConComentarios.comentarios;
+    }
+
+    // 4. Lógica de cifrado de descripción (que ya teníamos)
+    if (tarea.sensitive && tarea.description && isAuthorized) {
       const { decrypt } = require("../security/encryption");
       tarea.description = decrypt(tarea.description);
+    } else if (tarea.sensitive) {
+      tarea.description = "🔒 Información restringida";
     }
 
     return res.json(tarea);
@@ -89,9 +122,15 @@ router.put(
     try {
       const { title, completed, description, sensitive, estado } = req.body;
 
+      // ✅ FIX: Ciframos la descripción ANTES de actualizar si sensitive es true
+      let textToSave = description;
+      if (sensitive && description) {
+        textToSave = encrypt(description);
+      }
+
       const tarea = await Tarea.findByIdAndUpdate(
         req.params.id,
-        { title, completed, description, sensitive, estado }, // Agregamos estado
+        { title, completed, description: textToSave, sensitive, estado }, // Pasamos la variable procesada
         { new: true, runValidators: true },
       );
 

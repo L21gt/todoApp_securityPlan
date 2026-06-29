@@ -25,6 +25,11 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // ✅ FIX 1: Si el 401 viene de intentar iniciar sesión, NO redirigimos, dejamos que el frontend muestre el error.
+      if (originalRequest.url.includes("/login")) {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
       const { refreshToken } = getTokens();
 
@@ -32,7 +37,7 @@ apiClient.interceptors.response.use(
       if (!refreshToken) {
         clearTokens();
         window.dispatchEvent(new Event("auth:logout"));
-        window.location.href = "/login"; // ✅ Redirección forzada e inmediata
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
