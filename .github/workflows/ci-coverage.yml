@@ -2,52 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, feature/* ]
+    branches: [main, master, develop, feature/*]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests
-      run: npm run test:coverage
-    
-    - name: Check coverage
-      run: |
-        COVERAGE_OUTPUT=$(npm run test:coverage 2>&1)
-        COVERAGE_LINE=$(echo "$COVERAGE_OUTPUT" | grep "All files" | head -1)
-        
-        if [ -n "$COVERAGE_LINE" ]; then
-          COVERAGE_PERCENT=$(echo "$COVERAGE_LINE" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
-          
-          if [ -n "$COVERAGE_PERCENT" ]; then
-            COVERAGE_INT=$(echo "$COVERAGE_PERCENT" | cut -d'.' -f1)
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:coverage
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: tu_secreto_jwt_de_prueba
+
+      - name: Check coverage
+        run: |
+          COVERAGE_OUTPUT=$(npm run test:coverage 2>&1)
+          COVERAGE_LINE=$(echo "$COVERAGE_OUTPUT" | grep "All files" | head -1)
+
+          if [ -n "$COVERAGE_LINE" ]; then
+            COVERAGE_PERCENT=$(echo "$COVERAGE_LINE" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
             
-            if [ "$COVERAGE_INT" -lt "80" ]; then
-              echo "Coverage $COVERAGE_PERCENT% is below 80%"
-              exit 1
-            else
-              echo "Coverage $COVERAGE_PERCENT% meets requirement"
+            if [ -n "$COVERAGE_PERCENT" ]; then
+              COVERAGE_INT=$(echo "$COVERAGE_PERCENT" | cut -d'.' -f1)
+              
+              if [ "$COVERAGE_INT" -lt "80" ]; then
+                echo "Coverage $COVERAGE_PERCENT% is below 80%"
+                exit 1
+              else
+                echo "Coverage $COVERAGE_PERCENT% meets requirement"
+              fi
             fi
           fi
-        fi
-    
-    - name: Upload coverage
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: coverage/
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
