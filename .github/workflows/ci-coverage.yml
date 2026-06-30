@@ -22,11 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm run test:coverage
+      - name: Ejecutar pruebas y cobertura
+        run: npm run test:coverage -- --runInBand
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
-          JWT_SECRET: tu_secreto_jwt_de_prueba
 
       - name: Check coverage
         run: |

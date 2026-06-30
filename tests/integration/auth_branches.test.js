@@ -28,20 +28,24 @@ describe("Cobertura de Ramas Auth", () => {
     }
   });
 
-  it("Register: Éxito y Usuario Duplicado (400)", async () => {
+  it("Register: Éxito y Usuario Duplicado (409)", async () => {
     // 1. Camino feliz
-    await request(app).post("/api/auth/register").send({
-      name: "R1",
-      email: "r1@authbranch.com",
-      password: "Password123!",
-    });
+    await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "R1",
+        email: "r1@authbranch.com",
+        password: "Password123!",
+      });
     // 2. Camino triste (ya existe)
-    const res = await request(app).post("/api/auth/register").send({
-      name: "R1",
-      email: "r1@authbranch.com",
-      password: "Password123!",
-    });
-    expect(res.statusCode).toBe(409);
+    const res = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "R1",
+        email: "r1@authbranch.com",
+        password: "Password123!",
+      });
+    expect(res.statusCode).toBe(409); // El backend responde 409 Conflict
   });
 
   it("Login: Cuenta inactiva debe ser rechazada (403)", async () => {

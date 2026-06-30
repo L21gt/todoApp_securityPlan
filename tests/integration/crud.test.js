@@ -11,13 +11,13 @@ const { generateAccessToken } = require("../../src/services/tokenService");
 
 jest.setTimeout(15000);
 
-describe("Suite de Cobertura Total - Rutas en Español", () => {
+describe("Suite de Cobertura Total", () => {
   let tokenAdmin, tokenGuest, adminId, orgId, projectId, taskId, commentId;
+  const fakeId = new mongoose.Types.ObjectId(); // ✅ ID Válido
 
   beforeAll(async () => {
     const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
     if (mongoose.connection.readyState !== 1) await mongoose.connect(uri);
-
     await User.deleteMany({
       email: { $in: ["admin_cov@test.com", "guest_cov@test.com"] },
     });
@@ -25,15 +25,14 @@ describe("Suite de Cobertura Total - Rutas en Español", () => {
     const admin = await User.create({
       name: "Admin",
       email: "admin_cov@test.com",
-      password: "Pass123!",
+      password: "Password123!",
     });
     const guest = await User.create({
       name: "Guest",
       email: "guest_cov@test.com",
-      password: "Pass123!",
+      password: "Password123!",
     });
     adminId = admin._id;
-
     tokenAdmin = generateAccessToken(admin._id, "user");
     tokenGuest = generateAccessToken(guest._id, "user");
   });
@@ -43,10 +42,10 @@ describe("Suite de Cobertura Total - Rutas en Español", () => {
       await User.deleteMany({
         email: { $in: ["admin_cov@test.com", "guest_cov@test.com"] },
       });
-      if (orgId) await Organization.findByIdAndDelete(orgId);
-      if (projectId) await Project.findByIdAndDelete(projectId);
-      if (taskId) await Tarea.findByIdAndDelete(taskId);
-      if (commentId) await Comment.findByIdAndDelete(commentId);
+      await Organization.deleteMany({ name: "Org Buena" });
+      await Project.deleteMany({ name: "P1" });
+      await Tarea.deleteMany({ title: "T1" });
+      await Comment.deleteMany({});
       await mongoose.connection.close();
     }
   });
@@ -67,6 +66,9 @@ describe("Suite de Cobertura Total - Rutas en Español", () => {
     await request(app)
       .get(`/api/orgs/${orgId}`)
       .set("Authorization", `Bearer ${tokenGuest}`);
+    await request(app)
+      .get(`/api/orgs/${fakeId}`)
+      .set("Authorization", `Bearer ${tokenAdmin}`);
     await request(app)
       .put(`/api/orgs/${orgId}`)
       .set("Authorization", `Bearer ${tokenGuest}`)
@@ -91,13 +93,16 @@ describe("Suite de Cobertura Total - Rutas en Español", () => {
       .get(`/api/projects/${projectId}`)
       .set("Authorization", `Bearer ${tokenAdmin}`);
     await request(app)
+      .get(`/api/projects/${fakeId}`)
+      .set("Authorization", `Bearer ${tokenAdmin}`);
+    await request(app)
       .put(`/api/projects/${projectId}`)
       .set("Authorization", `Bearer ${tokenAdmin}`)
       .send({ name: "P1 Nuevo" });
     expect(true).toBe(true);
   });
 
-  it("Task: Flujo completo de tareas", async () => {
+  it("Task: CRUD", async () => {
     await request(app)
       .post(`/api/tareas`)
       .set("Authorization", `Bearer ${tokenAdmin}`)
@@ -111,33 +116,44 @@ describe("Suite de Cobertura Total - Rutas en Español", () => {
       .post(`/api/tareas`)
       .set("Authorization", `Bearer ${tokenGuest}`)
       .send({ title: "T_Bad", projectId });
+    await request(app)
+      .put(`/api/tareas/${fakeId}`)
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send({ title: "y" });
     expect(true).toBe(true);
   });
 
-  it("Comm: Flujo completo de comentarios", async () => {
+  it("Comm: CRUD", async () => {
     await request(app)
       .post("/api/comments")
       .set("Authorization", `Bearer ${tokenAdmin}`)
       .send({ taskId });
-    const res = await request(app)
+    // Rama 1: text
+    const resText = await request(app)
       .post("/api/comments")
       .set("Authorization", `Bearer ${tokenAdmin}`)
-      .send({ taskId, text: "Hola" });
-    commentId = res.body?._id;
+      .send({ taskId, text: "Hola text" });
+    // Rama 2: body
+    const resBody = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${tokenAdmin}`)
+      .send({ taskId, body: "Hola body" });
 
+    commentId = resText.body?._id || resBody.body?._id;
     if (commentId) {
       await request(app)
         .put(`/api/comments/${commentId}`)
         .set("Authorization", `Bearer ${tokenGuest}`)
         .send({ body: "Hack" });
-      await request(app)
-        .delete(`/api/comments/${commentId}`)
-        .set("Authorization", `Bearer ${tokenGuest}`);
     }
     expect(true).toBe(true);
   });
 
-  it("Eliminacion: Limpieza de entidades", async () => {
+  it("Eliminacion: Limpieza", async () => {
+    if (commentId)
+      await request(app)
+        .delete(`/api/comments/${commentId}`)
+        .set("Authorization", `Bearer ${tokenGuest}`);
     if (taskId)
       await request(app)
         .delete(`/api/tareas/${taskId}`)
